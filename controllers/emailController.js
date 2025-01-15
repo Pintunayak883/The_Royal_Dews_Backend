@@ -2,21 +2,19 @@ import nodemailer from "nodemailer";
 
 export default async function EmailHandler(req, res) {
   if (req.method === "POST") {
-    const { name, email, file, fileName, address, position } = req.body;
+    const { name, email, subject, text } = req.body;
 
+<<<<<<< HEAD
     if (!file) {
       return res.status(400).json({ message: "file data missing" });
+=======
+    // Check if essential fields are missing
+    if (!name || !email || !subject || !text) {
+      return res.status(400).json({ message: "Missing required fields." });
+>>>>>>> e5f477322c47f91723f9d1cc243eb4b9eef5c1e0
     }
 
     try {
-      // Validate `file` input
-      if (typeof file !== "string") {
-        throw new Error("Invalid file format. Expected base64 string.");
-      }
-
-      const fileBuffer = Buffer.from(file, "base64");
-      console.log("File Buffer Length: ", fileBuffer.length); // Check if the fileBuffer has content
-
       // Nodemailer mein email bhejne ka setup
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -32,20 +30,33 @@ export default async function EmailHandler(req, res) {
 
       const mailOptions = {
         from: process.env.SMTP_MAIL,
-        to: email, // Email correctly set ho raha hai?
-        subject: "New Career Form Submission",
-        text: `Name: ${name}\nEmail: ${email}\nPosition: ${position}\nAddress: ${address}\nUploaded File: ${fileName}`,
-        attachments: [
-          {
-            filename: fileName,
-            content: Buffer.from(file, "base64"), // File ko buffer mein convert karen
-            encoding: "base64",
-          },
-        ],
+        to: email, // Receiver email
+        subject: subject,
+        text: `Name: ${name}\nEmail: ${email}\nMessage: ${text}`,
       };
 
-      await transporter.sendMail(mailOptions);
-      res.status(200).json({ message: "Email sent successfully!" });
+      // If no file is included in the request
+      if (!req.body.file) {
+        await transporter.sendMail(mailOptions);
+        return res.status(200).json({ message: "Email sent successfully!" });
+      }
+
+      // If file is included
+      const { file, fileName } = req.body;
+      if (typeof file === "string") {
+        const fileBuffer = Buffer.from(file, "base64");
+        mailOptions.attachments = [
+          {
+            filename: fileName,
+            content: fileBuffer,
+            encoding: "base64",
+          },
+        ];
+        await transporter.sendMail(mailOptions);
+        return res.status(200).json({ message: "Email sent with attachment!" });
+      } else {
+        return res.status(400).json({ message: "Invalid file format." });
+      }
     } catch (error) {
       console.error("Error:", error.message);
       res
