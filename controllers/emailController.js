@@ -5,7 +5,7 @@ export default async function EmailHandler(req, res) {
     const { name, email, file, fileName, address, position } = req.body;
 
     if (!file) {
-      return res.status(400).json({ message: "File data missing" });
+      return res.status(400).json({ message: "file data missing" });
     }
 
     try {
